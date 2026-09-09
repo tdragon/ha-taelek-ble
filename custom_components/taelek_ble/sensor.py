@@ -33,6 +33,7 @@ class TaelekSensorEntityDescription(SensorEntityDescription):
 
     value_fn: Callable[[TaelekData], Any]
     requires_gatt: bool = False
+    requires_success: bool = True
 
 
 def _gatt_value(path: str) -> Callable[[TaelekData], Any]:
@@ -268,6 +269,27 @@ SENSORS: tuple[TaelekSensorEntityDescription, ...] = (
         for index in range(7)
     ),
     TaelekSensorEntityDescription(
+        key="poll_status",
+        translation_key="poll_status",
+        device_class=SensorDeviceClass.ENUM,
+        options=["pending", "success", "failed"],
+        entity_category=EntityCategory.DIAGNOSTIC,
+        requires_gatt=True,
+        requires_success=False,
+        value_fn=lambda data: (
+            "success" if data.gatt else "failed" if data.poll_error else "pending"
+        ),
+    ),
+    TaelekSensorEntityDescription(
+        key="last_poll_attempt",
+        translation_key="last_poll_attempt",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        requires_gatt=True,
+        requires_success=False,
+        value_fn=lambda data: data.last_poll_attempt,
+    ),
+    TaelekSensorEntityDescription(
         key="last_polled",
         translation_key="last_polled",
         device_class=SensorDeviceClass.TIMESTAMP,
@@ -310,6 +332,8 @@ class TaelekSensor(TaelekEntity, SensorEntity):
     def available(self) -> bool:
         """Return whether the entity's own data source has produced data."""
         if self.entity_description.requires_gatt:
+            if not self.entity_description.requires_success:
+                return self.coordinator.data.last_poll_attempt is not None
             return self.coordinator.data.gatt is not None
         return super().available
 
@@ -318,8 +342,17 @@ class TaelekSensor(TaelekEntity, SensorEntity):
         """Return the latest decoded value."""
         data = self.coordinator.data
         if self.entity_description.requires_gatt:
-            if data.gatt is None:
+            if self.entity_description.requires_success and data.gatt is None:
                 return None
         elif data.advertisement is None:
             return None
         return self.entity_description.value_fn(data)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str] | None:
+        """Expose the latest connection error on the polling-status sensor."""
+        if self.entity_description.key != "poll_status":
+            return None
+        if error := self.coordinator.data.poll_error:
+            return {"last_error": error}
+        return None

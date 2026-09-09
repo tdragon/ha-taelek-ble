@@ -60,6 +60,8 @@
       "heating_minutes_day_4": {"name": "Heating time 2 days ago"},
       "heating_minutes_day_5": {"name": "Heating time yesterday"},
       "heating_minutes_day_6": {"name": "Heating time today"},
+      "poll_status": {"name": "Connected polling", "state": {"pending": "Pending", "success": "Success", "failed": "Failed"}},
+      "last_poll_attempt": {"name": "Last connected poll attempt"},
       "last_polled": {"name": "Last connected poll"}
     },
     "binary_sensor": {

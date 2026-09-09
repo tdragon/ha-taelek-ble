@@ -62,7 +62,7 @@ Enable **Settings → Devices & services → Taelek BLE → Configure → Connec
 - Hardware, software, and bootloader versions; connected device type; melting condition
 - Relay cycle count, operating time, and total heating time
 - Heating minutes for each of the last six days and today
-- Last successful connected poll
+- Connected-poll status, last attempt, latest error, and last successful poll
 
 Each poll reads only `productInfo`, `productStateA`, `productCountersA`, and `productCounterB`, then disconnects. No pairing or GATT writes are performed.
 

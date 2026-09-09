@@ -43,6 +43,7 @@ class TaelekData:
     advertisement: TaelekAdvertisement | None = None
     last_seen: datetime | None = None
     gatt: TaelekGattData | None = None
+    last_poll_attempt: datetime | None = None
     last_polled: datetime | None = None
     poll_error: str | None = None
 
@@ -89,6 +90,7 @@ class TaelekCoordinator(DataUpdateCoordinator[TaelekData]):
         if not self.active_polling:
             return self.data
 
+        attempted_at = datetime.now(UTC)
         address = self.data.address
         ble_device = bluetooth.async_ble_device_from_address(
             self.hass, address, connectable=True
@@ -96,7 +98,7 @@ class TaelekCoordinator(DataUpdateCoordinator[TaelekData]):
         if ble_device is None:
             error = f"No connectable Bluetooth route for {address}"
             _LOGGER.warning("GATT poll skipped for %s: %s", self.serial, error)
-            return replace(self.data, poll_error=error)
+            return replace(self.data, last_poll_attempt=attempted_at, poll_error=error)
 
         try:
             gatt_data = await async_poll_gatt(
@@ -108,11 +110,12 @@ class TaelekCoordinator(DataUpdateCoordinator[TaelekData]):
         except Exception as err:  # connection failures must not suppress advertisements
             error = f"{type(err).__name__}: {err}"
             _LOGGER.warning("GATT poll failed for %s: %s", self.serial, error)
-            return replace(self.data, poll_error=error)
+            return replace(self.data, last_poll_attempt=attempted_at, poll_error=error)
 
         return replace(
             self.data,
             gatt=gatt_data,
+            last_poll_attempt=attempted_at,
             last_polled=datetime.now(UTC),
             poll_error=None,
         )
