@@ -72,6 +72,7 @@ def test_setup_registers_an_independent_periodic_poll(
 ) -> None:
     """Active polling uses a timer that advertisements cannot postpone."""
     coordinator = SimpleNamespace(
+        serial=241896329,
         active_polling=True,
         async_refresh=AsyncMock(),
         async_request_refresh=AsyncMock(),
@@ -94,6 +95,7 @@ def test_setup_registers_an_independent_periodic_poll(
         runtime_data=None,
         async_on_unload=Mock(),
         add_update_listener=Mock(return_value=Mock()),
+        async_create_background_task=Mock(),
     )
 
     assert asyncio.run(taelek_ble.async_setup_entry(hass, entry)) is True
@@ -104,5 +106,8 @@ def test_setup_registers_an_independent_periodic_poll(
     periodic_callback = track_interval.call_args.args[1]
     asyncio.run(periodic_callback(None))
     coordinator.async_request_refresh.assert_awaited_once_with()
+    entry.async_create_background_task.assert_called_once()
+    initial_poll = entry.async_create_background_task.call_args.args[1]
+    asyncio.run(initial_poll)
     coordinator.async_refresh.assert_awaited_once_with()
     entry.async_on_unload.assert_any_call(cancel_interval)

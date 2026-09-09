@@ -203,7 +203,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: TaelekConfigEntry) -> bo
                 timedelta(seconds=POLL_INTERVAL),
             )
         )
-        await coordinator.async_refresh()
+        entry.async_create_background_task(
+            hass,
+            coordinator.async_refresh(),
+            name=f"{DOMAIN}_{coordinator.serial}_initial_poll",
+        )
     return True
 
 
