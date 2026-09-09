@@ -22,7 +22,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: home-assistant/actions/hassfest@master
+      - name: Run hassfest with registry retries
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if docker pull ghcr.io/home-assistant/hassfest:latest; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 15))
+          done
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/github/workspace" \
+            ghcr.io/home-assistant/hassfest:latest
 
   hacs:
     runs-on: ubuntu-latest
