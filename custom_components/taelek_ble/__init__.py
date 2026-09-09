@@ -20,6 +20,7 @@ from homeassistant.components.bluetooth.match import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .advertisement import COMPANY_ID, TaelekAdvertisement, parse_manufacturer_data
@@ -68,9 +69,9 @@ class TaelekCoordinator(DataUpdateCoordinator[TaelekData]):
             config_entry=entry,
             name=f"{DOMAIN}_{serial}",
             always_update=True,
-            update_interval=timedelta(seconds=POLL_INTERVAL)
-            if self.active_polling
-            else None,
+            # A dedicated interval callback schedules connected polling. Passive
+            # advertisement updates must never influence that clock.
+            update_interval=None,
         )
         self.data = TaelekData(address=str(entry.data[CONF_INITIAL_ADDRESS]))
 
@@ -190,6 +191,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: TaelekConfigEntry) -> bo
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     if coordinator.active_polling:
+
+        async def _async_periodic_poll(_now: datetime) -> None:
+            """Request one connected poll without resetting this interval."""
+            await coordinator.async_request_refresh()
+
+        entry.async_on_unload(
+            async_track_time_interval(
+                hass,
+                _async_periodic_poll,
+                timedelta(seconds=POLL_INTERVAL),
+            )
+        )
         await coordinator.async_refresh()
     return True
 

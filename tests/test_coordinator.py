@@ -8,8 +8,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from custom_components import taelek_ble
 from custom_components.taelek_ble import TaelekCoordinator, TaelekData
-from custom_components.taelek_ble.const import POLL_RETRY_DELAYS
+from custom_components.taelek_ble.const import POLL_INTERVAL, POLL_RETRY_DELAYS
 
 
 def test_advertisement_does_not_reset_periodic_poll_timer() -> None:
@@ -64,3 +65,44 @@ def test_connected_poll_retries_transient_failures(
     assert result.last_polled is not None
     assert poll.await_count == 3
     assert [call.args[0] for call in sleep.await_args_list] == list(POLL_RETRY_DELAYS)
+
+
+def test_setup_registers_an_independent_periodic_poll(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Active polling uses a timer that advertisements cannot postpone."""
+    coordinator = SimpleNamespace(
+        active_polling=True,
+        async_refresh=AsyncMock(),
+        async_request_refresh=AsyncMock(),
+    )
+    cancel_advertisements = Mock()
+    cancel_interval = Mock()
+    register_callback = Mock(return_value=cancel_advertisements)
+    track_interval = Mock(return_value=cancel_interval)
+    monkeypatch.setattr(taelek_ble, "TaelekCoordinator", Mock(return_value=coordinator))
+    monkeypatch.setattr(
+        taelek_ble.bluetooth, "async_register_callback", register_callback
+    )
+    monkeypatch.setattr(taelek_ble, "async_track_time_interval", track_interval)
+
+    hass = SimpleNamespace(
+        config_entries=SimpleNamespace(async_forward_entry_setups=AsyncMock())
+    )
+    entry = SimpleNamespace(
+        data={"serial": "241896329"},
+        runtime_data=None,
+        async_on_unload=Mock(),
+        add_update_listener=Mock(return_value=Mock()),
+    )
+
+    assert asyncio.run(taelek_ble.async_setup_entry(hass, entry)) is True
+
+    track_interval.assert_called_once()
+    assert track_interval.call_args.args[0] is hass
+    assert track_interval.call_args.args[2].total_seconds() == POLL_INTERVAL
+    periodic_callback = track_interval.call_args.args[1]
+    asyncio.run(periodic_callback(None))
+    coordinator.async_request_refresh.assert_awaited_once_with()
+    coordinator.async_refresh.assert_awaited_once_with()
+    entry.async_on_unload.assert_any_call(cancel_interval)
