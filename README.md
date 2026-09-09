@@ -66,6 +66,8 @@ Enable **Settings → Devices & services → Taelek BLE → Configure → Connec
 
 Each poll reads only `productInfo`, `productStateA`, `productCountersA`, and `productCounterB`, then disconnects. No pairing or GATT writes are performed.
 
+The thermostat device page also includes a **Force query** button. It immediately performs one read-only connected query even when periodic polling is disabled, making it practical to test a movable Bluetooth proxy beside the thermostat.
+
 ## Observed advertisement format
 
 After the standard Bluetooth AD wrapper and Taelek company ID are removed, the 18-byte payload is:

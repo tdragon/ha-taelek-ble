@@ -29,6 +29,9 @@
     }
   },
   "entity": {
+    "button": {
+      "force_query": {"name": "Force query"}
+    },
     "sensor": {
       "temperature": {"name": "Temperature"},
       "mode": {"name": "Mode", "state": {"boost": "Boost", "comfort": "Comfort", "eco": "Eco", "automatic_comfort": "Program comfort", "automatic_eco": "Program eco", "eco_state_6": "Eco (state 6)", "unknown": "Unknown"}},

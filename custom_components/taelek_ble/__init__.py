@@ -31,7 +31,11 @@ from .const import (
 )
 from .gatt import TaelekGattData, async_poll_gatt
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.SENSOR,
+]
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -55,6 +59,7 @@ class TaelekCoordinator(DataUpdateCoordinator[TaelekData]):
         """Initialize the coordinator."""
         self.serial = serial
         self.active_polling = bool(entry.options.get(CONF_ACTIVE_POLLING, False))
+        self._force_query_requested = False
         super().__init__(
             hass,
             _LOGGER,
@@ -85,9 +90,17 @@ class TaelekCoordinator(DataUpdateCoordinator[TaelekData]):
             )
         )
 
+    async def async_force_query(self) -> None:
+        """Make one immediate read-only query regardless of the periodic option."""
+        self._force_query_requested = True
+        try:
+            await self.async_refresh()
+        finally:
+            self._force_query_requested = False
+
     async def _async_update_data(self) -> TaelekData:
-        """Make one short read-only connection when active polling is enabled."""
-        if not self.active_polling:
+        """Make one short read-only connection when polling is requested."""
+        if not self.active_polling and not self._force_query_requested:
             return self.data
 
         attempted_at = datetime.now(UTC)
