@@ -56,7 +56,7 @@ The configured thermostat name embedded in the advertisement—such as `Botia`�
 
 After the standard Bluetooth AD wrapper and Taelek company ID are removed, the 18-byte payload is:
 
-- Bytes `0..1`: signed 16-bit little-endian temperature, `0.1 °C`
+- Bytes `0..1`: signed 16-bit little-endian active/control temperature, `0.1 °C`
 - Byte `2`: relay bit, state code, and error code
 - Byte `3`: product/type discriminator
 - Bytes `4..7`: unsigned 32-bit little-endian serial number
@@ -70,12 +70,12 @@ Observed example:
 
 This decodes as `20.9 °C`, Program Eco, heating off, no error, serial `241896329`, and configured name `Botia`.
 
-The format was recovered from ecoControl Android 3.0.5 and validated against an observed thermostat advertisement. Unknown state codes remain visible as raw diagnostics rather than being guessed.
+The format was recovered from ecoControl Android 3.0.5 and cross-checked against ecoControl 3.0.11 on a real thermostat. In Botia's `Floor` mode, the advertised value matched the app's floor temperature (`20.7 °C`) while the air sensor read `26.2 °C`; this indicates that the packet carries the selected control temperature rather than always carrying air temperature. Unknown state codes remain visible as raw diagnostics rather than being guessed.
 
 ## Requirements and limitations
 
 - Home Assistant Bluetooth must receive the advertisement, either locally or through an ESPHome Bluetooth proxy.
-- No historical values, setpoint, floor temperature, or cumulative counters are present in this advertisement; those require a GATT connection and are intentionally not accessed.
+- The advertisement contains one selected control temperature. Separate air, floor, and external readings, setpoints, hardware/software versions, counters, and history require a GATT connection and are intentionally not accessed.
 - Devices do not become available until their first valid advertisement is received after setup.
 - Advertisement cadence is controlled by the thermostat.
 
