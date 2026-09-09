@@ -1,12 +1,12 @@
 # Taelek BLE for Home Assistant
 
-A read-only Home Assistant custom integration for Taelek `ecoControl` Bluetooth thermostats and compatible OEM devices.
+A Home Assistant custom integration for Taelek `ecoControl` Bluetooth thermostats and compatible OEM devices.
 
-It listens to manufacturer advertisements through Home Assistant Bluetooth—including ESPHome Bluetooth proxies—and **never connects, pairs, writes, or changes thermostat settings**.
+Passive advertisement monitoring is always used for live control temperature, mode, relay state, errors, and signal strength. An **opt-in read-only connected poll every 10 minutes** can additionally retrieve the separate sensor temperatures, setpoint, versions, counters, and seven-day heating history. It never pairs or writes.
 
-## Why passive advertisements?
+## Why passive advertisements plus optional polling?
 
-Taelek advertisements already contain useful live telemetry. Some thermostats also appear to allow only one BLE central or may change behavior while the official app maintains a connection. This integration therefore uses advertisement data only.
+Taelek advertisements already contain useful live telemetry, so those values never require a connection. Separate sensors and lifetime/history counters are only available over GATT. Connected polling is therefore disabled by default and, when enabled under the integration's **Configure** dialog, makes one short read-only connection every 10 minutes and immediately disconnects.
 
 ## Installation with HACS
 
@@ -52,6 +52,20 @@ The configured thermostat name embedded in the advertisement—such as `Botia`�
 - Boost
 - Error
 
+### Optional connected-poll sensors
+
+Enable **Settings → Devices & services → Taelek BLE → Configure → Connected polling** to retrieve these every 10 minutes:
+
+- Desired temperature/setpoint
+- Separate air, floor, and external temperatures
+- Relative humidity, sensor error, operation mode, and device state
+- Hardware, software, and bootloader versions; connected device type; melting condition
+- Relay cycle count, operating time, and total heating time
+- Heating minutes for each of the last six days and today
+- Last successful connected poll
+
+Each poll reads only `productInfo`, `productStateA`, `productCountersA`, and `productCounterB`, then disconnects. No pairing or GATT writes are performed.
+
 ## Observed advertisement format
 
 After the standard Bluetooth AD wrapper and Taelek company ID are removed, the 18-byte payload is:
@@ -74,22 +88,25 @@ The format was recovered from ecoControl Android 3.0.5 and cross-checked against
 
 ## Requirements and limitations
 
-- Home Assistant Bluetooth must receive the advertisement, either locally or through an ESPHome Bluetooth proxy.
-- The advertisement contains one selected control temperature. Separate air, floor, and external readings, setpoints, hardware/software versions, counters, and history require a GATT connection and are intentionally not accessed.
+- Home Assistant Bluetooth must receive the advertisement and provide a connectable route, either locally or through an ESPHome Bluetooth proxy.
+- Connected polling is off by default. The official app must not hold the thermostat's single BLE connection.
+- Some thermostats may suspend or alter heating output during a BLE connection. Polls are deliberately brief, but verify behavior on your hardware before leaving the option enabled.
+- The advertisement contains one selected control temperature. Separate air, floor, and external readings, setpoints, versions, counters, and daily history are added only after the first successful connected poll.
 - Devices do not become available until their first valid advertisement is received after setup.
 - Advertisement cadence is controlled by the thermostat.
 
 ## Privacy and safety
 
 - No cloud service or internet connection is used.
-- No BLE connection is opened.
-- No pairing or GATT reads/writes occur.
+- Connected polling is explicit opt-in and remains read-only.
+- No pairing or GATT writes occur.
+- Every connected poll disconnects in a `finally` cleanup path, including read errors and timeouts.
 - Neighboring devices are not added unless explicitly selected; ignored discoveries are handled by Home Assistant.
 
 ## Development
 
 ```bash
-uv run --with homeassistant --with bluetooth-adapters --with aiousbwatcher --with pyserial --with pytest python -m pytest
+uv run --with homeassistant --with aiohasupervisor --with serialx --with bluetooth-adapters --with aiousbwatcher --with pyserial --with pytest python -m pytest
 uv run --with ruff ruff check .
 uv run --with ruff ruff format --check .
 ```

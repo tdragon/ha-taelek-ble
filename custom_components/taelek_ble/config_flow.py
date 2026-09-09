@@ -9,10 +9,12 @@ from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
     async_discovered_service_info,
 )
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.core import callback
 
 from .advertisement import COMPANY_ID, TaelekAdvertisement, parse_manufacturer_data
 from .const import (
+    CONF_ACTIVE_POLLING,
     CONF_CONFIGURED_NAME,
     CONF_INITIAL_ADDRESS,
     CONF_SERIAL,
@@ -24,6 +26,12 @@ class TaelekConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle discovery and selection of Taelek BLE devices."""
 
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(_config_entry) -> TaelekOptionsFlow:
+        """Return the options flow for opt-in connected polling."""
+        return TaelekOptionsFlow()
 
     def __init__(self) -> None:
         """Initialize the flow."""
@@ -141,3 +149,28 @@ class TaelekConfigFlow(ConfigFlow, domain=DOMAIN):
             CONF_CONFIGURED_NAME: decoded.configured_name,
             CONF_INITIAL_ADDRESS: discovery_info.address,
         }
+
+
+class TaelekOptionsFlow(OptionsFlow):
+    """Configure optional, read-only GATT polling."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Enable or disable ten-minute connected polling."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_ACTIVE_POLLING,
+                        default=self.config_entry.options.get(
+                            CONF_ACTIVE_POLLING, False
+                        ),
+                    ): bool
+                }
+            ),
+        )

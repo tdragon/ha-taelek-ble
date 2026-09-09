@@ -90,6 +90,6 @@ class TaelekBinarySensor(TaelekEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return the latest decoded boolean value."""
-        if self.coordinator.data is None:
+        if self.coordinator.data is None or self.coordinator.data.advertisement is None:
             return None
         return self.entity_description.value_fn(self.coordinator.data)

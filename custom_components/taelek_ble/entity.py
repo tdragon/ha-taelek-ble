@@ -22,13 +22,17 @@ class TaelekEntity(CoordinatorEntity[TaelekCoordinator]):
     @property
     def available(self) -> bool:
         """Return true after at least one valid advertisement was received."""
-        return super().available and self.coordinator.data is not None
+        return (
+            super().available
+            and self.coordinator.data is not None
+            and self.coordinator.data.advertisement is not None
+        )
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return thermostat device information."""
         data = self.coordinator.data
-        if data is None:
+        if data is None or data.advertisement is None:
             return DeviceInfo(
                 identifiers={(DOMAIN, str(self.coordinator.serial))},
                 manufacturer=MANUFACTURER,

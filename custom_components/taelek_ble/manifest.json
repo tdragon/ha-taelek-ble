@@ -1,18 +1,14 @@
 {
   "domain": "taelek_ble",
   "name": "Taelek BLE",
-  "bluetooth": [
-    {
-      "manufacturer_id": 1162
-    }
-  ],
+  "bluetooth": [{"manufacturer_id": 1162}],
   "codeowners": ["@tdragon"],
   "config_flow": true,
-  "dependencies": ["bluetooth_adapters"],
+  "dependencies": ["bluetooth"],
   "documentation": "https://github.com/tdragon/ha-taelek-ble",
   "integration_type": "device",
-  "iot_class": "local_push",
+  "iot_class": "local_polling",
   "issue_tracker": "https://github.com/tdragon/ha-taelek-ble/issues",
   "requirements": [],
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

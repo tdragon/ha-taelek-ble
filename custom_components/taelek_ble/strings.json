@@ -6,13 +6,11 @@
       "user": {
         "title": "Select a Taelek device",
         "description": "Choose a compatible device seen in passive Bluetooth advertisements. Ignored discoveries remain available here for manual addition.",
-        "data": {
-          "serial": "Device"
-        }
+        "data": {"serial": "Device"}
       },
       "bluetooth_confirm": {
         "title": "Add {name}?",
-        "description": "Configured name: {name}\nSerial: {serial}\nAddress: {address}\n\nThis integration only listens to advertisements and never connects to the thermostat."
+        "description": "Configured name: {name}\nSerial: {serial}\nAddress: {address}\n\nPassive advertisement monitoring is enabled by default. Optional read-only connected polling can be enabled afterward."
       }
     },
     "abort": {
@@ -21,26 +19,48 @@
       "not_supported": "The advertisement does not contain a supported Taelek payload."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Connected polling",
+        "description": "When enabled, Home Assistant makes a short read-only Bluetooth connection every 10 minutes, reads four characteristics, and disconnects. It never pairs or writes. A connection may briefly affect thermostats that allow only one Bluetooth central.",
+        "data": {"active_polling": "Enable connected polling every 10 minutes"}
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "temperature": {"name": "Temperature"},
-      "mode": {
-        "name": "Mode",
-        "state": {
-          "boost": "Boost",
-          "comfort": "Comfort",
-          "eco": "Eco",
-          "automatic_comfort": "Program comfort",
-          "automatic_eco": "Program eco",
-          "eco_state_6": "Eco (state 6)",
-          "unknown": "Unknown"
-        }
-      },
+      "mode": {"name": "Mode", "state": {"boost": "Boost", "comfort": "Comfort", "eco": "Eco", "automatic_comfort": "Program comfort", "automatic_eco": "Program eco", "eco_state_6": "Eco (state 6)", "unknown": "Unknown"}},
       "configured_name": {"name": "Configured name"},
       "state_code": {"name": "State code"},
       "error_code": {"name": "Error code"},
       "signal_strength": {"name": "Signal strength"},
-      "last_seen": {"name": "Last seen"}
+      "last_seen": {"name": "Last seen"},
+      "setpoint": {"name": "Desired temperature"},
+      "air_temperature": {"name": "Air temperature"},
+      "floor_temperature": {"name": "Floor temperature"},
+      "external_temperature": {"name": "External temperature"},
+      "humidity": {"name": "Humidity"},
+      "sensor_error": {"name": "Sensor error"},
+      "operation_mode": {"name": "Operation mode"},
+      "device_state": {"name": "Device state", "state": {"temperature_balanced": "Temperature balanced", "heating": "Heating", "cooling": "Cooling", "unknown": "Unknown"}},
+      "melting_condition": {"name": "Melting condition"},
+      "hardware_version": {"name": "Hardware version"},
+      "software_version": {"name": "Software version"},
+      "bootloader_version": {"name": "Bootloader version"},
+      "device_type": {"name": "Device type"},
+      "relay_cycle_count": {"name": "Relay cycle count"},
+      "operating_time": {"name": "Operating time"},
+      "total_heating_time": {"name": "Total heating time"},
+      "heating_minutes_day_0": {"name": "Heating time 6 days ago"},
+      "heating_minutes_day_1": {"name": "Heating time 5 days ago"},
+      "heating_minutes_day_2": {"name": "Heating time 4 days ago"},
+      "heating_minutes_day_3": {"name": "Heating time 3 days ago"},
+      "heating_minutes_day_4": {"name": "Heating time 2 days ago"},
+      "heating_minutes_day_5": {"name": "Heating time yesterday"},
+      "heating_minutes_day_6": {"name": "Heating time today"},
+      "last_polled": {"name": "Last connected poll"}
     },
     "binary_sensor": {
       "heating": {"name": "Heating"},
