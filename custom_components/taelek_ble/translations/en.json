@@ -1,0 +1,54 @@
+{
+  "title": "Taelek BLE",
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Select a Taelek device",
+        "description": "Choose a compatible device seen in passive Bluetooth advertisements. Ignored discoveries remain available here for manual addition.",
+        "data": {
+          "serial": "Device"
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Add {name}?",
+        "description": "Configured name: {name}\nSerial: {serial}\nAddress: {address}\n\nThis integration only listens to advertisements and never connects to the thermostat."
+      }
+    },
+    "abort": {
+      "already_configured": "This device is already configured.",
+      "no_devices_found": "No compatible, unconfigured Taelek devices are currently visible.",
+      "not_supported": "The advertisement does not contain a supported Taelek payload."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "temperature": {"name": "Temperature"},
+      "mode": {
+        "name": "Mode",
+        "state": {
+          "boost": "Boost",
+          "comfort": "Comfort",
+          "eco": "Eco",
+          "automatic_comfort": "Program comfort",
+          "automatic_eco": "Program eco",
+          "eco_state_6": "Eco (state 6)",
+          "unknown": "Unknown"
+        }
+      },
+      "configured_name": {"name": "Configured name"},
+      "state_code": {"name": "State code"},
+      "error_code": {"name": "Error code"},
+      "signal_strength": {"name": "Signal strength"},
+      "last_seen": {"name": "Last seen"}
+    },
+    "binary_sensor": {
+      "heating": {"name": "Heating"},
+      "eco": {"name": "Eco"},
+      "comfort": {"name": "Comfort"},
+      "automatic_program": {"name": "Automatic program"},
+      "boost": {"name": "Boost"},
+      "error": {"name": "Error"}
+    }
+  }
+}
