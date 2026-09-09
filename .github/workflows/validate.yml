@@ -13,6 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
       - run: uv run --with homeassistant --with bluetooth-adapters --with aiousbwatcher --with pyserial --with pytest python -m pytest
       - run: uv run --with ruff ruff check .
 
