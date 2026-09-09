@@ -23,7 +23,7 @@
     "step": {
       "init": {
         "title": "Connected polling",
-        "description": "When enabled, Home Assistant makes a short read-only Bluetooth connection every 10 minutes, reads four characteristics, and disconnects. It never pairs or writes. A connection may briefly affect thermostats that allow only one Bluetooth central.",
+        "description": "When enabled, Home Assistant starts a short read-only Bluetooth poll every 10 minutes, reads four characteristics, and disconnects. Transient failures are retried twice. It never pairs or writes. A connection may briefly affect thermostats that allow only one Bluetooth central.",
         "data": {"active_polling": "Enable connected polling every 10 minutes"}
       }
     }

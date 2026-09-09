@@ -152,7 +152,9 @@ async def async_poll_gatt(ble_device: Any, name: str) -> TaelekGattData:
         BleakClient,
         ble_device,
         name,
-        max_attempts=2,
+        # The coordinator owns bounded retries so every attempt gets a fresh
+        # Home Assistant Bluetooth route and also covers transient read errors.
+        max_attempts=1,
         use_services_cache=True,
         pair=False,
     )

@@ -2,11 +2,11 @@
 
 A Home Assistant custom integration for Taelek `ecoControl` Bluetooth thermostats and compatible OEM devices.
 
-Passive advertisement monitoring is always used for live control temperature, mode, relay state, errors, and signal strength. An **opt-in read-only connected poll every 10 minutes** can additionally retrieve the separate sensor temperatures, setpoint, versions, counters, and seven-day heating history. It never pairs or writes.
+Passive advertisement monitoring is always used for live control temperature, mode, relay state, errors, and signal strength. An **opt-in read-only connected poll every 10 minutes** can additionally retrieve the separate sensor temperatures, setpoint, versions, counters, and seven-day heating history. A poll gets up to three attempts, delayed by 5 and 15 seconds, before being marked failed. It never pairs or writes.
 
 ## Why passive advertisements plus optional polling?
 
-Taelek advertisements already contain useful live telemetry, so those values never require a connection. Separate sensors and lifetime/history counters are only available over GATT. Connected polling is therefore disabled by default and, when enabled under the integration's **Configure** dialog, makes one short read-only connection every 10 minutes and immediately disconnects.
+Taelek advertisements already contain useful live telemetry, so those values never require a connection. Separate sensors and lifetime/history counters are only available over GATT. Connected polling is therefore disabled by default and, when enabled under the integration's **Configure** dialog, starts a read-only poll every 10 minutes. Transient failures are retried twice, and every successful connection is immediately disconnected.
 
 ## Installation with HACS
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
@@ -28,6 +29,7 @@ from .const import (
     CONF_SERIAL,
     DOMAIN,
     POLL_INTERVAL,
+    POLL_RETRY_DELAYS,
 )
 from .gatt import TaelekGattData, async_poll_gatt
 
@@ -81,14 +83,16 @@ class TaelekCoordinator(DataUpdateCoordinator[TaelekData]):
         decoded = parse_manufacturer_data(payload, rssi=service_info.rssi)
         if decoded is None or decoded.serial != self.serial:
             return
-        self.async_set_updated_data(
-            replace(
-                self.data,
-                advertisement=decoded,
-                address=service_info.address,
-                last_seen=datetime.now(UTC),
-            )
+        # Do not use async_set_updated_data here: it resets the coordinator's
+        # refresh timer. Since this device advertises frequently, doing so would
+        # postpone the periodic GATT poll indefinitely.
+        self.data = replace(
+            self.data,
+            advertisement=decoded,
+            address=service_info.address,
+            last_seen=datetime.now(UTC),
         )
+        self.async_update_listeners()
 
     async def async_force_query(self) -> None:
         """Make one immediate read-only query regardless of the periodic option."""
@@ -103,35 +107,56 @@ class TaelekCoordinator(DataUpdateCoordinator[TaelekData]):
         if not self.active_polling and not self._force_query_requested:
             return self.data
 
-        attempted_at = datetime.now(UTC)
         address = self.data.address
-        ble_device = bluetooth.async_ble_device_from_address(
-            self.hass, address, connectable=True
-        )
-        if ble_device is None:
-            error = f"No connectable Bluetooth route for {address}"
-            _LOGGER.warning("GATT poll skipped for %s: %s", self.serial, error)
-            return replace(self.data, last_poll_attempt=attempted_at, poll_error=error)
+        attempts = len(POLL_RETRY_DELAYS) + 1
+        error = ""
+        attempted_at = datetime.now(UTC)
 
-        try:
-            gatt_data = await async_poll_gatt(
-                ble_device,
-                self.data.advertisement.configured_name
-                if self.data.advertisement
-                else self.config_entry.title,
+        for attempt in range(attempts):
+            attempted_at = datetime.now(UTC)
+            ble_device = bluetooth.async_ble_device_from_address(
+                self.hass, address, connectable=True
             )
-        except Exception as err:  # connection failures must not suppress advertisements
-            error = f"{type(err).__name__}: {err}"
-            _LOGGER.warning("GATT poll failed for %s: %s", self.serial, error)
-            return replace(self.data, last_poll_attempt=attempted_at, poll_error=error)
+            if ble_device is None:
+                error = f"No connectable Bluetooth route for {address}"
+            else:
+                try:
+                    gatt_data = await async_poll_gatt(
+                        ble_device,
+                        self.data.advertisement.configured_name
+                        if self.data.advertisement
+                        else self.config_entry.title,
+                    )
+                except Exception as err:  # BLE and read failures are transient
+                    error = f"{type(err).__name__}: {err}"
+                else:
+                    return replace(
+                        self.data,
+                        gatt=gatt_data,
+                        last_poll_attempt=attempted_at,
+                        last_polled=datetime.now(UTC),
+                        poll_error=None,
+                    )
 
-        return replace(
-            self.data,
-            gatt=gatt_data,
-            last_poll_attempt=attempted_at,
-            last_polled=datetime.now(UTC),
-            poll_error=None,
+            if attempt < len(POLL_RETRY_DELAYS):
+                delay = POLL_RETRY_DELAYS[attempt]
+                _LOGGER.debug(
+                    "GATT poll attempt %s/%s failed for %s: %s; retrying in %ss",
+                    attempt + 1,
+                    attempts,
+                    self.serial,
+                    error,
+                    delay,
+                )
+                await asyncio.sleep(delay)
+
+        _LOGGER.warning(
+            "GATT poll failed after %s attempts for %s: %s",
+            attempts,
+            self.serial,
+            error,
         )
+        return replace(self.data, last_poll_attempt=attempted_at, poll_error=error)
 
 
 type TaelekConfigEntry = ConfigEntry[TaelekCoordinator]

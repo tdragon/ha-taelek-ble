@@ -7,3 +7,4 @@ CONF_INITIAL_ADDRESS = "initial_address"
 CONF_CONFIGURED_NAME = "configured_name"
 CONF_ACTIVE_POLLING = "active_polling"
 POLL_INTERVAL = 10 * 60
+POLL_RETRY_DELAYS = (5, 15)
